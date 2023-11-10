@@ -41,7 +41,7 @@
     opacity: 1;
 }
 .minislider > .arrow.disabled {
-    pointer-events: none;
+    /*pointer-events: none;*/
     opacity: 0.4;
 }
 .minislider > .arrow::before {

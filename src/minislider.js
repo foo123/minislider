@@ -1,7 +1,7 @@
 /**
 *  minislider.js
 *  Optimized responsive mini slider (up to 10 slides) for Desktop and Mobile
-*  @VERSION: 1.0.1
+*  @VERSION: 1.0.2
 *
 *  https://github.com/foo123/minislider
 *
@@ -136,17 +136,20 @@ function minislider(sliders)
     var self = this;
     if (!(self instanceof minislider)) return new minislider(sliders);
 
-    var startX, endX, slider,
+    var startX, endX, startY, endY, slider,
         N, W, offset = 16,
         isTouch = false, isClick = false,
         notClick = function() {isClick = false},
         clickDelay = 120, timer;
 
     var move = function move(evt) {
+        endX = (evt.touches && evt.touches.length ? evt.touches[0].pageX : evt.pageX);
+        endY = (evt.touches && evt.touches.length ? evt.touches[0].pageY : evt.pageY);
+        var dx = endX - startX, dy = endY - startY, index;
+        if (isTouch && (stdMath.abs(dy) >= stdMath.abs(dx))) return;
         evt.preventDefault && evt.preventDefault();
         evt.stopPropagation && evt.stopPropagation();
-        endX = (evt.touches && evt.touches.length ? evt.touches[0].pageX : evt.pageX);
-        var dx = endX - startX, index = get_slide(slider);
+        index = get_slide(slider);
         if ((0 > dx && N > index+1) || (0 < dx && 0 <= index-1))
         {
             move_slider(slider, String(-index*W + dx)+'px');
@@ -165,12 +168,18 @@ function minislider(sliders)
             removeEvent(window, 'mousemove', move, {passive:false,capture:false});
             removeEvent(window, 'mouseup', release, {passive:false,capture:false});
         }
+        var dx = endX - startX, dy = endY - startY, index = get_slide(slider);
+        if (isTouch && (stdMath.abs(dy) >= stdMath.abs(dx)))
+        {
+            if (dx) revert(slider, index, stdMath.abs(dx)/W);
+            slider = null;
+            return;
+        }
         if (!isClick)
         {
             evt.preventDefault && evt.preventDefault();
             evt.stopPropagation && evt.stopPropagation();
         }
-        var dx = endX - startX, index = get_slide(slider);
         if (0 > dx)
         {
             dx = stdMath.abs(dx);
@@ -225,6 +234,7 @@ function minislider(sliders)
         {
             isTouch = true;
             endX = startX = evt.touches[0].pageX;
+            endY = startY = evt.touches[0].pageY;
             addEvent(document, 'touchmove', move, {passive:false,capture:false});
             addEvent(document, 'touchend', release, {passive:false,capture:false});
             addEvent(document, 'touchcancel', release, {passive:false,capture:false});
@@ -235,6 +245,7 @@ function minislider(sliders)
         {
             isTouch = false;
             endX = startX = evt.pageX;
+            endY = startY = evt.pageY;
             addEvent(document, 'mousemove', move, {passive:false,capture:false});
             addEvent(document, 'mouseup', release, {passive:false,capture:false});
             evt.preventDefault && evt.preventDefault();
@@ -318,7 +329,7 @@ minislider.prototype = {
     start: null,
     stop: null
 };
-minislider.VERSION = '1.0.1';
+minislider.VERSION = '1.0.2';
 
 // export it
 root.minislider = minislider;
