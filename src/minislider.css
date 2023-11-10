@@ -38,6 +38,7 @@
     transform: translate(0, -50%);
     background: none;
     z-index: 5;
+    opacity: 1;
 }
 .minislider > .arrow.disabled {
     pointer-events: none;
