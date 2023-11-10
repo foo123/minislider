@@ -1,7 +1,7 @@
 /**
 *  minislider.js
-*  Optimized mini slider (up to 10 slides) for Desktop and Mobile
-*  @VERSION: 1.0.0
+*  Optimized responsive mini slider (up to 10 slides) for Desktop and Mobile
+*  @VERSION: 1.0.1
 *
 *  https://github.com/foo123/minislider
 *
@@ -42,6 +42,10 @@ function removeEvent(target, event, handler, options)
     else target.removeEventListener(event, handler, hasEventOptions() ? options : ('object' === typeof options ? !!options.capture : !!options));
 }
 
+function get_slides(slider)
+{
+    return slider ? ((+slider.getAttribute('data-slides')) || 0) : 0;
+}
 function get_slide(slider)
 {
     return slider ? ((+slider.getAttribute('data-slide')) || 0) : 0;
@@ -77,6 +81,35 @@ function active_bullet(slider, index)
         }
     }
 }
+function get_arrows(slider)
+{
+    var _arrows = slider ? slider.parentNode.querySelectorAll('.arrow') : [], arrows = [null, null];
+    if (_arrows[1] && _arrows[1].parentNode === slider.parentNode) arrows[1] = _arrows[1];
+    if (_arrows[0] && _arrows[0].parentNode === slider.parentNode) arrows[0] = _arrows[0];
+    return arrows;
+}
+function active_arrows(slider, index)
+{
+    if (slider)
+    {
+        var arrows = get_arrows(slider), N = (+slider.getAttribute('data-slides')) || 0, ds;
+        for (var i=0; i<2; ++i)
+        {
+            if (!arrows[i]) continue;
+            ds = arrows[i].getAttribute('data-slide');
+            if ('prev' === ds)
+            {
+                if (index-1 >= 0) arrows[i].classList.remove('disabled');
+                else arrows[i].classList.add('disabled');
+            }
+            else if ('next' === ds)
+            {
+                if (index+1 < N) arrows[i].classList.remove('disabled');
+                else arrows[i].classList.add('disabled');
+            }
+        }
+    }
+}
 function revert(slider, index, t)
 {
     if (slider)
@@ -92,6 +125,7 @@ function goTo(slider, index, t)
     {
         set_slide(slider, index);
         active_bullet(slider, index);
+        active_arrows(slider, index);
         slider.classList.add('swipe');
         slider.style['transition-duration'] = String((1-(t||0))*get_swipe(slider))+'ms';
         move_slider(slider, String(-index * 100)+'%');
@@ -102,8 +136,10 @@ function minislider(sliders)
     var self = this;
     if (!(self instanceof minislider)) return new minislider(sliders);
 
-    var startX, endX, slider, N, W, offset = 16,
-        isTouch, isClick, notClick = function() {isClick = false},
+    var startX, endX, slider,
+        N, W, offset = 16,
+        isTouch = false, isClick = false,
+        notClick = function() {isClick = false},
         clickDelay = 120, timer;
 
     var move = function move(evt) {
@@ -255,6 +291,7 @@ function minislider(sliders)
                 index = get_slide(slider);
                 move_slider(slider, String(-index * 100)+'%');
                 active_bullet(slider, index);
+                active_arrows(slider, index);
             }
         });
         return self;
@@ -281,7 +318,7 @@ minislider.prototype = {
     start: null,
     stop: null
 };
-minislider.VERSION = '1.0.0';
+minislider.VERSION = '1.0.1';
 
 // export it
 root.minislider = minislider;
