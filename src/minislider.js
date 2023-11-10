@@ -129,8 +129,11 @@ function minislider(sliders)
             removeEvent(window, 'mousemove', move, {passive:false,capture:false});
             removeEvent(window, 'mouseup', release, {passive:false,capture:false});
         }
-        evt.preventDefault && evt.preventDefault();
-        evt.stopPropagation && evt.stopPropagation();
+        if (!isClick)
+        {
+            evt.preventDefault && evt.preventDefault();
+            evt.stopPropagation && evt.stopPropagation();
+        }
         var dx = endX - startX, index = get_slide(slider);
         if (0 > dx)
         {
