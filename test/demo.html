@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" type="text/css" href="../src/minislider.css" />
+<script src="../src/minislider.js"></script>
+<style type="text/css">
+body {
+    background: #fff;
+    color: #555;
+    font-size: 18px;
+    font-family: sans-serif;
+    font-weight: 400;
+    text-align: center;
+    padding: 30px;
+}
+.minislider {
+    width: 100%;
+    padding-bottom: 60%;
+    margin: 40px auto;
+}
+</style>
+<title>mini slider test demo</title>
+</head>
+<body>
+<h1>mini slider v.<script>document.write(minislider.VERSION);</script> demo</h1>
+
+<div class="minislider">
+
+<div class="slider" data-slide="1" data-slides="3">
+    <a class="slide" href="https://en.wikipedia.org/wiki/Landscape" target="_blank" style="background-image:url('./imgs/1.jpg')"></a>
+    <a class="slide" href="https://en.wikipedia.org/wiki/Landscape" target="_blank" style="background-image:url('./imgs/3.jpg')"></a>
+    <figure class="slide" style="background-image:url('./imgs/4.jpg')"></figure>
+</div>
+
+<div class="bullets">
+    <a href="javascript:void(0)" data-slide="0" title="1" class="bullet"></a>
+    <a href="javascript:void(0)" data-slide="1" title="2" class="bullet"></a>
+    <a href="javascript:void(0)" data-slide="2" title="3" class="bullet"></a>
+</div>
+
+<a href="javascript:void(0)" class="arrow prev" data-slide="prev" title="Previous"></a>
+<a href="javascript:void(0)" class="arrow next" data-slide="next" title="Next"></a>
+
+</div>
+<script>minislider(document.querySelectorAll('.minislider')).start();</script>
+</body>
+</html>
