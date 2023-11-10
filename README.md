@@ -8,6 +8,7 @@ Optimized mini slider (up to 10 slides) for Desktop and Mobile
 
 **demo**
 
+
 ```html
 <div class="minislider">
 
