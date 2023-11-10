@@ -1,9 +1,9 @@
 # minislider
 
-Optimized responsive mini slider (up to 10 slides) for Desktop and Mobile
+Optimized responsive mini slider (up to 12 slides) for Desktop and Mobile
 
 
-**version: 1.0.2** (4kB minified)
+**version: 1.0.5** (5kB minified)
 
 
 **demo**
@@ -14,6 +14,7 @@ Optimized responsive mini slider (up to 10 slides) for Desktop and Mobile
 .minislider {
     width: 100%;
     margin: 0 auto;
+    --slides-per-area: 1;
     --aspect-ratio: calc(16 / 9); /* 16 : 9 */
 }
 </style>

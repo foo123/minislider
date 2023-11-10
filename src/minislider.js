@@ -1,7 +1,7 @@
 /**
 *  minislider.js
-*  Optimized responsive mini slider (up to 10 slides) for Desktop and Mobile
-*  @VERSION: 1.0.2
+*  Optimized responsive mini slider (up to 12 slides) for Desktop and Mobile
+*  @VERSION: 1.0.5
 *
 *  https://github.com/foo123/minislider
 *
@@ -50,9 +50,13 @@ function get_slide(slider)
 {
     return slider ? ((+slider.getAttribute('data-slide')) || 0) : 0;
 }
-function set_slide(slider, index)
+function set_slide(slider, index, spa)
 {
-    if (slider) slider.setAttribute('data-slide', index || 0);
+    if (slider) slider.setAttribute('data-slide', spa*stdMath.floor((index || 0) / spa));
+}
+function get_spa(slider)
+{
+    return slider ? (parseInt(window.getComputedStyle(slider.parentNode).getPropertyValue('--slides-per-area')) || 1) : 1;
 }
 function get_swipe(slider)
 {
@@ -67,17 +71,19 @@ function get_bullets(slider)
     var bullets = slider ? slider.parentNode.querySelector('.bullets') : null;
     return bullets && (bullets.parentNode === slider.parentNode) ? bullets : null;
 }
-function active_bullet(slider, index)
+function active_bullet(slider, index, spa)
 {
     if (slider)
     {
-        var bullets = get_bullets(slider);
+        var bullets = get_bullets(slider), idx, b;
         if (bullets)
         {
             forEach.call(bullets.children, function(b) {
                 b.classList.remove('current-slide');
             });
-            if (index < bullets.children.length) bullets.children[index].classList.add('current-slide');
+            idx = spa*stdMath.floor(index/spa);
+            b = bullets.querySelector('[data-slide="'+idx+'"]');
+            if (b) b.classList.add('current-slide');
         }
     }
 }
@@ -88,47 +94,47 @@ function get_arrows(slider)
     if (_arrows[0] && _arrows[0].parentNode === slider.parentNode) arrows[0] = _arrows[0];
     return arrows;
 }
-function active_arrows(slider, index)
+function active_arrows(slider, index, spa)
 {
     if (slider)
     {
-        var arrows = get_arrows(slider), N = (+slider.getAttribute('data-slides')) || 0, ds;
+        var arrows = get_arrows(slider), N = get_slides(slider), ds, idx = spa*stdMath.floor(index/spa);
         for (var i=0; i<2; ++i)
         {
             if (!arrows[i]) continue;
             ds = arrows[i].getAttribute('data-slide');
             if ('prev' === ds)
             {
-                if (index-1 >= 0) arrows[i].classList.remove('disabled');
+                if (idx-1 >= 0) arrows[i].classList.remove('disabled');
                 else arrows[i].classList.add('disabled');
             }
             else if ('next' === ds)
             {
-                if (index+1 < N) arrows[i].classList.remove('disabled');
+                if (idx+spa < N) arrows[i].classList.remove('disabled');
                 else arrows[i].classList.add('disabled');
             }
         }
     }
 }
-function revert(slider, index, t)
+function revert(slider, index, spa, t)
 {
     if (slider)
     {
         slider.classList.add('swipe');
         slider.style['transition-duration'] = String((t||0)*get_swipe(slider))+'ms';
-        move_slider(slider, String(-index * 100)+'%');
+        move_slider(slider, String(-stdMath.floor(index/spa) * 100)+'%');
     }
 }
-function goTo(slider, index, t)
+function goTo(slider, index, spa, t)
 {
     if (slider)
     {
-        set_slide(slider, index);
-        active_bullet(slider, index);
-        active_arrows(slider, index);
+        set_slide(slider, index, spa);
+        active_bullet(slider, index, spa);
+        active_arrows(slider, index, spa);
         slider.classList.add('swipe');
         slider.style['transition-duration'] = String((1-(t||0))*get_swipe(slider))+'ms';
-        move_slider(slider, String(-index * 100)+'%');
+        move_slider(slider, String(-stdMath.floor(index/spa) * 100)+'%');
     }
 }
 function minislider(sliders)
@@ -137,7 +143,7 @@ function minislider(sliders)
     if (!(self instanceof minislider)) return new minislider(sliders);
 
     var startX, endX, startY, endY, slider,
-        N, W, offset = 16,
+        N, W, spa = 1, offset = 16,
         isTouch = false, isClick = false,
         notClick = function() {isClick = false},
         clickDelay = 120, timer;
@@ -145,14 +151,15 @@ function minislider(sliders)
     var move = function move(evt) {
         endX = (evt.touches && evt.touches.length ? evt.touches[0].pageX : evt.pageX);
         endY = (evt.touches && evt.touches.length ? evt.touches[0].pageY : evt.pageY);
-        var dx = endX - startX, dy = endY - startY, index;
+        var dx = endX - startX, dy = endY - startY, index, idx;
         if (isTouch && (stdMath.abs(dy) >= stdMath.abs(dx))) return;
         evt.preventDefault && evt.preventDefault();
         evt.stopPropagation && evt.stopPropagation();
         index = get_slide(slider);
-        if ((0 > dx && N > index+1) || (0 < dx && 0 <= index-1))
+        idx = spa*stdMath.floor(index/spa);
+        if ((0 > dx && N > idx+spa) || (0 < dx && 0 <= idx-1))
         {
-            move_slider(slider, String(-index*W + dx)+'px');
+            move_slider(slider, String(-stdMath.floor(index/spa)*W + dx)+'px');
         }
     };
     var release = function release(evt) {
@@ -168,10 +175,10 @@ function minislider(sliders)
             removeEvent(window, 'mousemove', move, {passive:false,capture:false});
             removeEvent(window, 'mouseup', release, {passive:false,capture:false});
         }
-        var dx = endX - startX, dy = endY - startY, index = get_slide(slider);
+        var dx = endX - startX, dy = endY - startY, index = get_slide(slider), idx;
         if (isTouch && (stdMath.abs(dy) >= stdMath.abs(dx)))
         {
-            if (dx) revert(slider, index, stdMath.abs(dx)/W);
+            if (dx) revert(slider, index, spa, stdMath.abs(dx)/W);
             slider = null;
             return;
         }
@@ -180,39 +187,40 @@ function minislider(sliders)
             evt.preventDefault && evt.preventDefault();
             evt.stopPropagation && evt.stopPropagation();
         }
+        idx = spa*stdMath.floor(index/spa);
         if (0 > dx)
         {
             dx = stdMath.abs(dx);
-            if (N > index+1)
+            if (N > idx+spa)
             {
                 if (dx >= offset)
                 {
-                    goTo(slider, ++index, dx/W)
+                    goTo(slider, idx+spa, spa, dx/W)
                 }
                 else
                 {
-                    revert(slider, index, dx/W);
+                    revert(slider, idx, spa, dx/W);
                 }
             }
         }
         else if (0 < dx)
         {
             dx = stdMath.abs(dx);
-            if (0 <= index-1)
+            if (0 <= idx-1)
             {
                 if (dx >= offset)
                 {
-                    goTo(slider, --index, dx/W);
+                    goTo(slider, idx-spa, spa, dx/W);
                 }
                 else
                 {
-                    revert(slider, index, dx/W);
+                    revert(slider, idx, spa, dx/W);
                 }
             }
         }
         else
         {
-            revert(slider, index, stdMath.abs(dx)/W);
+            revert(slider, idx, spa, stdMath.abs(dx)/W);
         }
         slider = null;
     };
@@ -221,7 +229,8 @@ function minislider(sliders)
         if (!slider) return;
         W = slider.parentNode.clientWidth;
         if (0 >= W) {slider = null; return;}
-        N = (+slider.getAttribute('data-slides')) || 0;
+        N = get_slides(slider);
+        spa = get_spa(slider);
         slider.classList.remove('swipe');
         clearTimeout(timer);
         isClick = false;
@@ -264,28 +273,34 @@ function minislider(sliders)
             }
             return;
         }
-        var slide = a.getAttribute('data-slide'), slider, N, bullets, index;
+        var slide = a.getAttribute('data-slide'), slider, N, bullets, index, spa, idx;
         if ('prev' === slide)
         {
             slider = a.parentNode.querySelector('.slider');
-            N = (+slider.getAttribute('data-slides')) || 0;
+            N = get_slides(slider);
             index = get_slide(slider);
-            if (0 <= index-1) goTo(slider, index-1, 0);
+            spa = get_spa(slider);
+            idx = spa*stdMath.floor(index/spa);
+            if (0 <= idx-1) goTo(slider, idx-spa, spa, 0);
         }
         else if ('next' === slide)
         {
             slider = a.parentNode.querySelector('.slider');
-            N = (+slider.getAttribute('data-slides')) || 0;
+            N = get_slides(slider);
             index = get_slide(slider);
-            if (N > index+1) goTo(slider, index+1, 0);
+            spa = get_spa(slider);
+            idx = spa*stdMath.floor(index/spa);
+            if (N > idx+spa) goTo(slider, idx+spa, spa, 0);
         }
         bullets = a.closest('.bullets');
         if (bullets)
         {
             slider = bullets.parentNode.querySelector('.slider');
-            N = (+slider.getAttribute('data-slides')) || 0;
+            N = get_slides(slider);
             index = (+slide) || 0;
-            if (0 <= index && N > index) goTo(slider, index, 0);
+            spa = get_spa(slider);
+            idx = spa*stdMath.floor(index/spa);
+            if (0 <= idx && N > idx) goTo(slider, idx, spa, 0);
         }
     };
     var started = false;
@@ -296,13 +311,14 @@ function minislider(sliders)
             addEvent(ms, 'mousedown', handle, {passive:false,capture:false});
             addEvent(ms, 'touchstart', handle, {passive:false,capture:false});
             addEvent(ms, 'click', handle2, {passive:false,capture:false});
-            var slider = ms.querySelector('.slider'), index;
+            var slider = ms.querySelector('.slider'), index, spa;
             if (slider)
             {
                 index = get_slide(slider);
-                move_slider(slider, String(-index * 100)+'%');
-                active_bullet(slider, index);
-                active_arrows(slider, index);
+                spa = get_spa(slider);
+                move_slider(slider, String(-stdMath.floor(index/spa) * 100)+'%');
+                active_bullet(slider, index, spa);
+                active_arrows(slider, index, spa);
             }
         });
         return self;
@@ -329,7 +345,7 @@ minislider.prototype = {
     start: null,
     stop: null
 };
-minislider.VERSION = '1.0.2';
+minislider.VERSION = '1.0.5';
 
 // export it
 root.minislider = minislider;
