@@ -20,8 +20,18 @@ body {
     margin: 40px auto;
     --aspect-ratio: calc(16 / 9); /* 16 : 9 */
 }
+.minislider.one {
+    --auto-play: 1;
+    --delay: 3000ms;
+}
 .minislider.two {
     --slides-per-area: 2;
+}
+@media (max-width: 1024px) {
+.minislider.one {
+    /* enable/disable autoplay dynamically */
+    --auto-play: 0;
+}
 }
 </style>
 <title>mini slider test demo</title>
@@ -29,7 +39,7 @@ body {
 <body>
 <h1>mini slider v.<script>document.write(minislider.VERSION);</script> demo</h1>
 
-<div class="minislider" style="--auto-play:1;--delay:3000ms;">
+<div class="minislider one">
 
 <div class="slider" data-slide="1" data-slides="3">
     <a class="slide" href="https://en.wikipedia.org/wiki/Landscape" target="_blank" style="background-image:url('./imgs/1.jpg')"></a>
@@ -50,7 +60,7 @@ body {
 
 <div class="minislider two">
 
-<div class="slider" data-slide="0" data-slides="4">
+<div class="slider" data-slide="0">
     <a class="slide" href="https://en.wikipedia.org/wiki/Landscape" target="_blank" style="background-image:url('./imgs/1.jpg')"></a>
     <a class="slide" href="https://en.wikipedia.org/wiki/Landscape" target="_blank" style="background-image:url('./imgs/3.jpg')"></a>
     <figure class="slide" style="background-image:url('./imgs/4.jpg')"></figure>

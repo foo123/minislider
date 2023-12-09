@@ -46,6 +46,11 @@ function get_slides(slider)
 {
     return slider ? ((+slider.getAttribute('data-slides')) || 0) : 0;
 }
+function set_slides(slider)
+{
+    if (slider && !slider.hasAttribute('data-slides'))
+        slider.setAttribute('data-slides', String(slider.children.length));
+}
 function get_slide(slider)
 {
     return slider ? ((+slider.getAttribute('data-slide')) || 0) : 0;
@@ -162,20 +167,18 @@ function autoplay(slider)
     if (slider && slider.$minislider)
     {
         clearTimeout(slider.$minislider.timer);
-        if (get_autoplay(slider))
-        {
-            slider.$minislider.timer = setTimeout(function() {
-                if (slider && slider.$minislider)
-                {
-                    var index = get_slide(slider),
-                        N = get_slides(slider),
-                        spa = get_spa(slider),
-                        idx = spa*stdMath.floor(index/spa)
-                    ;
-                    goTo(slider, N > idx+spa ? idx+spa : 0, spa, 0);
-                }
-            }, get_delay(slider));
-        }
+        slider.$minislider.timer = setTimeout(function() {
+            if (slider.$minislider && get_autoplay(slider))
+            {
+                var N = get_slides(slider),
+                    index = get_slide(slider),
+                    spa = get_spa(slider),
+                    idx = spa*stdMath.floor(index/spa)
+                ;
+                goTo(slider, N > idx+spa ? idx+spa : 0, spa, 0);
+            }
+            if (slider.$minislider) autoplay(slider);
+        }, get_delay(slider));
     }
 }
 function minislider(sliders)
@@ -358,6 +361,7 @@ function minislider(sliders)
             if (slider)
             {
                 slider.$minislider = {timer:null};
+                set_slides(slider);
                 index = get_slide(slider);
                 spa = get_spa(slider);
                 move_slider(slider, String(-stdMath.floor(index/spa) * 100)+'%');
