@@ -7,7 +7,9 @@
     --slides-per-area: 1;
     --aspect-ratio: calc(1 / 1); /* 1 : 1 aspect ratio */
     --use-aspect-ratio: 1;
+    --auto-play: 0;
     --swipe: 400ms;
+    --delay: 2000ms;
     --bullet-color: #fff;
     --bullet-active-color: #999;
     --slide-color: #f0f0f0;

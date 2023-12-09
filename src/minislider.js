@@ -1,7 +1,7 @@
 /**
 *  minislider.js
 *  Optimized responsive mini slider (up to 12 slides) for Desktop and Mobile
-*  @VERSION: 1.0.5
+*  @VERSION: 1.0.6
 *
 *  https://github.com/foo123/minislider
 *
@@ -54,6 +54,10 @@ function set_slide(slider, index, spa)
 {
     if (slider) slider.setAttribute('data-slide', spa*stdMath.floor((index || 0) / spa));
 }
+function get_autoplay(slider)
+{
+    return slider ? (parseInt(window.getComputedStyle(slider.parentNode).getPropertyValue('--auto-play')) || 0) : 0;
+}
 function get_spa(slider)
 {
     return slider ? (parseInt(window.getComputedStyle(slider.parentNode).getPropertyValue('--slides-per-area')) || 1) : 1;
@@ -61,6 +65,10 @@ function get_spa(slider)
 function get_swipe(slider)
 {
     return slider ? (parseFloat(window.getComputedStyle(slider.parentNode).getPropertyValue('--swipe')) || 400) : 400;
+}
+function get_delay(slider)
+{
+    return slider ? (parseFloat(window.getComputedStyle(slider.parentNode).getPropertyValue('--delay')) || 2000) : 2000;
 }
 function move_slider(slider, amount)
 {
@@ -116,25 +124,58 @@ function active_arrows(slider, index, spa)
         }
     }
 }
-function revert(slider, index, spa, t)
+function revert(slider, index, spa, t, oncomplete)
 {
     if (slider)
     {
+        clearTimeout(slider.$minislider.timer);
+        var dur = (t||0)*get_swipe(slider);
         slider.classList.add('swipe');
-        slider.style['transition-duration'] = String((t||0)*get_swipe(slider))+'ms';
+        slider.style['transition-duration'] = String(dur)+'ms';
         move_slider(slider, String(-stdMath.floor(index/spa) * 100)+'%');
+        setTimeout(function() {
+            autoplay(slider);
+            if (oncomplete) oncomplete(slider);
+        }, dur + 10);
     }
 }
-function goTo(slider, index, spa, t)
+function goTo(slider, index, spa, t, oncomplete)
 {
     if (slider)
     {
+        clearTimeout(slider.$minislider.timer);
+        var dur = (1-(t||0))*get_swipe(slider);
         set_slide(slider, index, spa);
         active_bullet(slider, index, spa);
         active_arrows(slider, index, spa);
         slider.classList.add('swipe');
-        slider.style['transition-duration'] = String((1-(t||0))*get_swipe(slider))+'ms';
+        slider.style['transition-duration'] = String(dur)+'ms';
         move_slider(slider, String(-stdMath.floor(index/spa) * 100)+'%');
+        setTimeout(function() {
+            autoplay(slider);
+            if (oncomplete) oncomplete(slider);
+        }, dur + 10);
+    }
+}
+function autoplay(slider)
+{
+    if (slider && slider.$minislider)
+    {
+        clearTimeout(slider.$minislider.timer);
+        if (get_autoplay(slider))
+        {
+            slider.$minislider.timer = setTimeout(function() {
+                if (slider && slider.$minislider)
+                {
+                    var index = get_slide(slider),
+                        N = get_slides(slider),
+                        spa = get_spa(slider),
+                        idx = spa*stdMath.floor(index/spa)
+                    ;
+                    goTo(slider, N > idx+spa ? idx+spa : 0, spa, 0);
+                }
+            }, get_delay(slider));
+        }
     }
 }
 function minislider(sliders)
@@ -179,6 +220,7 @@ function minislider(sliders)
         if (isTouch && (stdMath.abs(dy) >= stdMath.abs(dx)))
         {
             if (dx) revert(slider, index, spa, stdMath.abs(dx)/W);
+            else autoplay(slider);
             slider = null;
             return;
         }
@@ -227,6 +269,7 @@ function minislider(sliders)
     var handle = function handle(evt) {
         slider = evt.target.closest('.slider');
         if (!slider) return;
+        clearTimeout(slider.$minislider.timer);
         W = slider.parentNode.clientWidth;
         if (0 >= W) {slider = null; return;}
         N = get_slides(slider);
@@ -314,11 +357,13 @@ function minislider(sliders)
             var slider = ms.querySelector('.slider'), index, spa;
             if (slider)
             {
+                slider.$minislider = {timer:null};
                 index = get_slide(slider);
                 spa = get_spa(slider);
                 move_slider(slider, String(-stdMath.floor(index/spa) * 100)+'%');
                 active_bullet(slider, index, spa);
                 active_arrows(slider, index, spa);
+                autoplay(slider);
             }
         });
         return self;
@@ -326,6 +371,8 @@ function minislider(sliders)
     self.stop = function() {
         if (!started) return self;
         forEach.call(sliders || [], function(ms) {
+            var slider = ms.querySelector('.slider');
+            if (slider && slider.$minislider) slider.$minislider = null;
             removeEvent(ms, 'mousedown', handle, {passive:false,capture:false});
             removeEvent(ms, 'touchstart', handle, {passive:false,capture:false});
             removeEvent(ms, 'click', handle2, {passive:false,capture:false});
@@ -345,7 +392,7 @@ minislider.prototype = {
     start: null,
     stop: null
 };
-minislider.VERSION = '1.0.5';
+minislider.VERSION = '1.0.6';
 
 // export it
 root.minislider = minislider;
