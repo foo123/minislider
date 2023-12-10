@@ -168,16 +168,22 @@ function autoplay(slider)
     {
         clearTimeout(slider.$minislider.timer);
         slider.$minislider.timer = setTimeout(function() {
-            if (slider.$minislider && get_autoplay(slider))
+            if (slider.$minislider)
             {
-                var N = get_slides(slider),
-                    index = get_slide(slider),
-                    spa = get_spa(slider),
-                    idx = spa*stdMath.floor(index/spa)
-                ;
-                goTo(slider, N > idx+spa ? idx+spa : 0, spa, 0);
+                if (get_autoplay(slider))
+                {
+                    var N = get_slides(slider),
+                        index = get_slide(slider),
+                        spa = get_spa(slider),
+                        idx = spa*stdMath.floor(index/spa)
+                    ;
+                    goTo(slider, N > idx+spa ? idx+spa : 0, spa, 0);
+                }
+                else
+                {
+                    autoplay(slider);
+                }
             }
-            if (slider.$minislider) autoplay(slider);
         }, get_delay(slider));
     }
 }
