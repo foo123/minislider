@@ -3,7 +3,7 @@
 Optimized responsive mini slider (up to 12 slides) for Desktop and Mobile
 
 
-**version: 1.0.6** (6kB minified)
+**version: 1.1.0** (6.5kB minified)
 
 
 **demo**

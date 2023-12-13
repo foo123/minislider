@@ -1,15 +1,19 @@
 /**
 *  minislider.js
 *  Optimized responsive mini slider (up to 12 slides) for Desktop and Mobile
-*  @VERSION: 1.0.6
-*
+*  @VERSION: 1.1.0
 *  https://github.com/foo123/minislider
-*
-**/
+*/
 (function(root) {
 "use strict";
 
-var stdMath = Math, forEach = Array.prototype.forEach;
+var stdMath = Math,
+    forEach = Array.prototype.forEach,
+    trim_re = /^\s+|\s+$/g,
+    trim = String.prototype.trim
+    ? function(s) {return s.trim();}
+    : function(s) {return s.replace(trim_re, '');}
+;
 
 function hasEventOptions()
 {
@@ -41,39 +45,86 @@ function removeEvent(target, event, handler, options)
     if (target.detachEvent) target.detachEvent('on' + event, handler);
     else target.removeEventListener(event, handler, hasEventOptions() ? options : ('object' === typeof options ? !!options.capture : !!options));
 }
+function hasClass(el, className)
+{
+    return el.classList
+        ? el.classList.contains(className)
+        : -1 !== (' ' + el.className + ' ').indexOf(' ' + className + ' ')
+    ;
+}
+function addClass(el, className)
+{
+    if (el.classList) el.classList.add(className);
+    else if (-1 === (' ' + el.className + ' ').indexOf(' ' + className + ' ')) el.className = '' === el.className ? className : (el.className + ' ' + className);
+}
+function removeClass(el, className)
+{
+    if (el.classList) el.classList.remove(className);
+    else el.className = trim((' ' + el.className + ' ').replace(' ' + className + ' ', ' '));
+}
+function addStyle(el, prop, val)
+{
+    if (el.style.setProperty) el.style.setProperty(prop, val);
+    else el.style[prop] = val;
+}
+function removeStyle(el, prop)
+{
+    if (el.style.removeProperty) el.style.removeProperty(prop);
+    else el.style[prop] = '';
+}
+function attr(el, att, val)
+{
+    if (3 <= arguments.length)
+    {
+        el.setAttribute(att, val);
+        return val;
+    }
+    else
+    {
+        return el.getAttribute(att);
+    }
+}
+function computedStyle(el)
+{
+    return ('function' === typeof window.getComputedStyle ? window.getComputedStyle(el, null) : el.currentStyle) || {};
+}
 
 function get_slides(slider)
 {
-    return slider ? ((+slider.getAttribute('data-slides')) || 0) : 0;
+    return slider ? ((+attr(slider, 'data-slides')) || 0) : 0;
 }
 function set_slides(slider)
 {
     if (slider && !slider.hasAttribute('data-slides'))
-        slider.setAttribute('data-slides', String(slider.children.length));
+        attr(slider, 'data-slides', String(slider.children.length));
 }
 function get_slide(slider)
 {
-    return slider ? ((+slider.getAttribute('data-slide')) || 0) : 0;
+    return slider ? ((+attr(slider, 'data-slide')) || 0) : 0;
 }
 function set_slide(slider, index, spa)
 {
-    if (slider) slider.setAttribute('data-slide', spa*stdMath.floor((index || 0) / spa));
+    if (slider) attr(slider, 'data-slide', spa*stdMath.floor((index || 0) / spa));
 }
-function get_autoplay(slider)
+function get_autoplay(slider, style)
 {
-    return slider ? (parseInt(window.getComputedStyle(slider.parentNode).getPropertyValue('--auto-play')) || 0) : 0;
+    style = style || computedStyle(slider.parentNode);
+    return parseInt(style.getPropertyValue('--auto-play')) || 0;
 }
-function get_spa(slider)
+function get_spa(slider, style)
 {
-    return slider ? (parseInt(window.getComputedStyle(slider.parentNode).getPropertyValue('--slides-per-area')) || 1) : 1;
+    style = style || computedStyle(slider.parentNode);
+    return parseInt(style.getPropertyValue('--slides-per-area')) || 1;
 }
-function get_swipe(slider)
+function get_swipe(slider, style)
 {
-    return slider ? (parseFloat(window.getComputedStyle(slider.parentNode).getPropertyValue('--swipe')) || 400) : 400;
+    style = style || computedStyle(slider.parentNode);
+    return parseFloat(style.getPropertyValue('--swipe')) || 400;
 }
-function get_delay(slider)
+function get_delay(slider, style)
 {
-    return slider ? (parseFloat(window.getComputedStyle(slider.parentNode).getPropertyValue('--delay')) || 2000) : 2000;
+    style = style || computedStyle(slider.parentNode);
+    return parseFloat(style.getPropertyValue('--delay')) || 2000;
 }
 function move_slider(slider, amount)
 {
@@ -92,11 +143,11 @@ function active_bullet(slider, index, spa)
         if (bullets)
         {
             forEach.call(bullets.children, function(b) {
-                b.classList.remove('current-slide');
+                removeClass(b, 'current-slide');
             });
             idx = spa*stdMath.floor(index/spa);
             b = bullets.querySelector('[data-slide="'+idx+'"]');
-            if (b) b.classList.add('current-slide');
+            if (b) addClass(b, 'current-slide');
         }
     }
 }
@@ -115,16 +166,16 @@ function active_arrows(slider, index, spa)
         for (var i=0; i<2; ++i)
         {
             if (!arrows[i]) continue;
-            ds = arrows[i].getAttribute('data-slide');
+            ds = attr(arrows[i], 'data-slide');
             if ('prev' === ds)
             {
-                if (idx-1 >= 0) arrows[i].classList.remove('disabled');
-                else arrows[i].classList.add('disabled');
+                if (idx-1 >= 0) removeClass(arrows[i], 'disabled');
+                else addClass(arrows[i], 'disabled');
             }
             else if ('next' === ds)
             {
-                if (idx+spa < N) arrows[i].classList.remove('disabled');
-                else arrows[i].classList.add('disabled');
+                if (idx+spa < N) removeClass(arrows[i], 'disabled');
+                else addClass(arrows[i], 'disabled');
             }
         }
     }
@@ -135,8 +186,8 @@ function revert(slider, index, spa, t, oncomplete)
     {
         clearTimeout(slider.$minislider.timer);
         var dur = (t||0)*get_swipe(slider);
-        slider.classList.add('swipe');
-        slider.style['transition-duration'] = String(dur)+'ms';
+        addClass(slider, 'swipe');
+        addStyle(slider, 'transition-duration', String(dur)+'ms');
         move_slider(slider, String(-stdMath.floor(index/spa) * 100)+'%');
         setTimeout(function() {
             autoplay(slider);
@@ -153,8 +204,8 @@ function goTo(slider, index, spa, t, oncomplete)
         set_slide(slider, index, spa);
         active_bullet(slider, index, spa);
         active_arrows(slider, index, spa);
-        slider.classList.add('swipe');
-        slider.style['transition-duration'] = String(dur)+'ms';
+        addClass(slider, 'swipe');
+        addStyle(slider, 'transition-duration', String(dur)+'ms');
         move_slider(slider, String(-stdMath.floor(index/spa) * 100)+'%');
         setTimeout(function() {
             autoplay(slider);
@@ -196,9 +247,13 @@ function minislider(sliders)
         N, W, spa = 1, offset = 16,
         isTouch = false, isClick = false,
         notClick = function() {isClick = false},
-        clickDelay = 120, timer;
+        clickDelay = 120, timer,
+        move, release,
+        handle, handle2,
+        add, remove;
 
-    var move = function move(evt) {
+    // private methods
+    move = function move(evt) {
         endX = (evt.touches && evt.touches.length ? evt.touches[0].pageX : evt.pageX);
         endY = (evt.touches && evt.touches.length ? evt.touches[0].pageY : evt.pageY);
         var dx = endX - startX, dy = endY - startY, index, idx;
@@ -212,7 +267,7 @@ function minislider(sliders)
             move_slider(slider, String(-stdMath.floor(index/spa)*W + dx)+'px');
         }
     };
-    var release = function release(evt) {
+    release = function release(evt) {
         clearTimeout(timer);
         if (isTouch)
         {
@@ -222,8 +277,8 @@ function minislider(sliders)
         }
         else
         {
-            removeEvent(window, 'mousemove', move, {passive:false,capture:false});
-            removeEvent(window, 'mouseup', release, {passive:false,capture:false});
+            removeEvent(document, 'mousemove', move, {passive:false,capture:false});
+            removeEvent(document, 'mouseup', release, {passive:false,capture:false});
         }
         var dx = endX - startX, dy = endY - startY, index = get_slide(slider), idx;
         if (isTouch && (stdMath.abs(dy) >= stdMath.abs(dx)))
@@ -275,7 +330,7 @@ function minislider(sliders)
         }
         slider = null;
     };
-    var handle = function handle(evt) {
+    handle = function handle(evt) {
         slider = evt.target.closest('.slider');
         if (!slider) return;
         clearTimeout(slider.$minislider.timer);
@@ -283,7 +338,7 @@ function minislider(sliders)
         if (0 >= W) {slider = null; return;}
         N = get_slides(slider);
         spa = get_spa(slider);
-        slider.classList.remove('swipe');
+        removeClass(slider, 'swipe');
         clearTimeout(timer);
         isClick = false;
         if (evt.target.closest('a'))
@@ -313,7 +368,7 @@ function minislider(sliders)
             evt.stopPropagation && evt.stopPropagation();
         }
     };
-    var handle2 = function handle2(evt) {
+    handle2 = function handle2(evt) {
         var a = evt.target.closest('a');
         if (!a) return;
         if (a.closest('.slide'))
@@ -325,7 +380,7 @@ function minislider(sliders)
             }
             return;
         }
-        var slide = a.getAttribute('data-slide'), slider, N, bullets, index, spa, idx;
+        var slide = attr(a, 'data-slide'), slider, N, bullets, index, spa, idx;
         if ('prev' === slide)
         {
             slider = a.parentNode.querySelector('.slider');
@@ -355,44 +410,69 @@ function minislider(sliders)
             if (0 <= idx && N > idx) goTo(slider, idx, spa, 0);
         }
     };
+
+    add = function add(ms) {
+        addEvent(ms, 'mousedown', handle, {passive:false,capture:false});
+        addEvent(ms, 'touchstart', handle, {passive:false,capture:false});
+        addEvent(ms, 'click', handle2, {passive:false,capture:false});
+        addClass(ms, 'minislider-js');
+        var slider = ms.querySelector('.slider'), index, spa;
+        if (slider)
+        {
+            slider.$minislider = {timer:null};
+            set_slides(slider);
+            index = get_slide(slider);
+            spa = get_spa(slider);
+            move_slider(slider, String(-stdMath.floor(index/spa) * 100)+'%');
+            active_bullet(slider, index, spa);
+            active_arrows(slider, index, spa);
+            autoplay(slider);
+        }
+    };
+    remove = function remove(ms) {
+        removeClass(ms, 'minislider-js');
+        removeEvent(ms, 'mousedown', handle, {passive:false,capture:false});
+        removeEvent(ms, 'touchstart', handle, {passive:false,capture:false});
+        removeEvent(ms, 'click', handle2, {passive:false,capture:false});
+        var slider = ms.querySelector('.slider');
+        if (slider && slider.$minislider) slider.$minislider = null;
+    };
+
     var started = false;
+    sliders = Array.prototype.slice.call(sliders || []);
+
     self.start = function() {
         if (started) return self;
         started = true;
-        forEach.call(sliders || [], function(ms) {
-            addEvent(ms, 'mousedown', handle, {passive:false,capture:false});
-            addEvent(ms, 'touchstart', handle, {passive:false,capture:false});
-            addEvent(ms, 'click', handle2, {passive:false,capture:false});
-            var slider = ms.querySelector('.slider'), index, spa;
-            if (slider)
-            {
-                slider.$minislider = {timer:null};
-                set_slides(slider);
-                index = get_slide(slider);
-                spa = get_spa(slider);
-                move_slider(slider, String(-stdMath.floor(index/spa) * 100)+'%');
-                active_bullet(slider, index, spa);
-                active_arrows(slider, index, spa);
-                autoplay(slider);
-            }
-        });
+        forEach.call(sliders, add);
         return self;
     };
     self.stop = function() {
         if (!started) return self;
-        forEach.call(sliders || [], function(ms) {
-            var slider = ms.querySelector('.slider');
-            if (slider && slider.$minislider) slider.$minislider = null;
-            removeEvent(ms, 'mousedown', handle, {passive:false,capture:false});
-            removeEvent(ms, 'touchstart', handle, {passive:false,capture:false});
-            removeEvent(ms, 'click', handle2, {passive:false,capture:false});
-        });
+        forEach.call(sliders, remove);
         started = false;
+        return self;
+    };
+    self.add = function(ms) {
+        if (-1 === sliders.indexOf(ms))
+        {
+            if (started) add(ms);
+            sliders.push(ms);
+        }
+        return self;
+    };
+    self.remove = function(ms) {
+        var idx = sliders.indexOf(ms);
+        if (-1 !== idx)
+        {
+            if (started) remove(ms);
+            sliders.splice(idx, 1);
+        }
         return self;
     };
     self.dispose = function() {
         self.stop();
-        sliders = null;
+        sliders = [];
         return self;
     };
 }
@@ -400,10 +480,12 @@ minislider.prototype = {
     constructor: minislider,
     dispose: null,
     start: null,
-    stop: null
+    stop: null,
+    add: null,
+    remove: null
 };
-minislider.VERSION = '1.0.6';
-
+minislider.VERSION = '1.1.0';
+if (root.Element) root.Element.prototype.$minislider = null;
 // export it
 root.minislider = minislider;
 })('undefined' !== typeof self ? self : window);

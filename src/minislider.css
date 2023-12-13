@@ -1,3 +1,4 @@
+/*https://github.com/foo123/minislider*/
 .minislider {
     position: relative;
     box-sizing: border-box;
@@ -13,6 +14,9 @@
     --bullet-color: #fff;
     --bullet-active-color: #999;
     --slide-color: #f0f0f0;
+}
+.minislider:hover {
+    --auto-play: 0 !important;
 }
 .minislider::before {
     content: "";
@@ -178,6 +182,10 @@
 }
 .minislider > .slider > .slide:nth-child(12) {
     left: calc(11 * 100% / 12 / var(--slides-per-area, 1));
+}
+.minislider:not(.minislider-js) > .bullets,
+.minislider:not(.minislider-js) > .arrow {
+    display: none !important;
 }
 @media (max-width: 420px) {
 .minislider > .arrow {
